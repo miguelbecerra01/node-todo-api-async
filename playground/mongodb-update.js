@@ -42,7 +42,7 @@ MongoClient.connect(url, { useNewUrlParser: true }, (err, client) => {
             },
             $inc: {
                 age: 10
-            },
+            },  
             $unset: {
                 fieldtodelete:''
             }
