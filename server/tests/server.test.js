@@ -12,10 +12,14 @@ const { Todo } = require('./../models/todo');
 const todos = [
     {
         _id: new ObjectID,
-        text: 'First Todo'
+        text: 'First Todo',
+        completed: true,
+        completedAt: 213
     }, {
         _id: new ObjectID,
-        text: 'Second Todo'
+        text: 'Second Todo',
+        completed: false,
+        completedAt: 213
     }];
 
 //testing lifecycle, settup the database to be useful
@@ -171,5 +175,43 @@ describe('POST /todos', () => {
         });
 
     });
+
+    describe('PATCH /todos/:id', () => {
+
+        it('should update the todo', (done) => {
+            var id = todos[0]._id.toHexString();
+            todos[0].text = 'New task';
+            todos[0].completed = true;
+
+
+            request(app)
+                .patch(`/todos/${id}`)
+                .send(todos[0])
+                .expect(200)
+                .expect((res) => {
+                    expect(res.body.todo.text).toBe(todos[0].text);
+                    expect(res.body.todo.completed).toBe(true);
+                    expect(typeof res.body.todo.completedAt).toBe('number');
+                })
+                .end(done);
+
+        });
+
+        it('should clear completedAt when todo is not completed', (done) => {
+            
+            todos[0].completed = false;
+
+            request(app)
+            .patch(`/todos/${todos[0]._id}`)    
+            .send(todos[0])
+            .expect(200)
+            .expect((res)=>{
+               // console.log(res.body);
+                expect(res.body.todo.completedAt).toNotExist
+            })
+            .end(done);
+        });
+    });
+
 
 });
