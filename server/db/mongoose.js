@@ -6,7 +6,12 @@ const mongoose = require('mongoose');
 //let mongoose use promises
 mongoose.Promise = global.Promise;
 
-mongoose.connect('mongodb://localhost:27017/TodoApp', { useNewUrlParser: true });
+const externalUrl = 'mongodb+srv://miguel:miguelb1!@mongodbtestapps-ykl1d.mongodb.net/test?retryWrites=true';
+const localUrl = 'mongodb://localhost:27017/TodoApp';
+
+mongoose.connect(externalUrl, { useNewUrlParser: true });
+
+
 
 module.exports = { mongoose };
 
