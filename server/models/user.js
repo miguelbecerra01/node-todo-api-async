@@ -68,7 +68,10 @@ UserSchema.methods.generateAuthToken = function () {
             _id: user._id.toHexString(),
             access
         },
-        process.env.JWT_SECRET).toString();
+        process.env.JWT_SECRET, 
+        {
+            expiresIn: '1m' //expires in 1 minute
+        }).toString();
 
     //user.tokens.concat([{ access, token }]);
     user.tokens.push({ access, token });
