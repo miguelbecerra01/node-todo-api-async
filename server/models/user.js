@@ -47,17 +47,49 @@ UserSchema.methods.toJSON = function () {
 
 
 UserSchema.methods.generateAuthToken = function () {
+    //instance methods get called with individual document
     var user = this;
     var access = 'auth';
     var token = jwt.sign({ _id: user._id.toHexString(), access }, 'abc123').toString();
 
-    user.tokens.concat([{ access, token }]);
+    //user.tokens.concat([{ access, token }]);
+    user.tokens.push({access, token});
+
 
     //we return to make the promise in server.js
     return user.save().then(() => {
         return token;
     });
 };
+
+
+//function is used because we need access to the this binding
+UserSchema.statics.findByToken = function (token) {
+    //model methods get called with the model as this binding
+    var User = this;
+    var decoded;
+
+    try {
+        decoded = jwt.verify(token, 'abc123');
+    } catch (e) {
+        //retrn a promise so in server.js you can call then to catch the error.
+        //return new Promise((resolve, reject)=>{
+        //    reject();
+       // });
+
+       //this is shorthand for promise
+       return Promise.reject();
+    }
+
+    //quotes are used when the dot is used to access to a property of the object
+    return User.findOne({
+        '_id':decoded._id,
+        'tokens.token': token,
+        'tokens.access': 'auth'
+    });
+    
+};
+
 
 var User = mongoose.model('User', UserSchema);
 
