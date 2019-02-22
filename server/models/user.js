@@ -2,7 +2,15 @@
 //https://www.npmjs.com/package/validator
 //https://mongoosejs.com/docs/middleware.html
 
+/*
 
+How can we decide to use whether Instance method or Model method ?
+
+You use static methods if you want to do something with a collection 
+(i.e. search the Users collection) and an instance method if you want to do
+ something on an individual document (i.e. a specific User).
+
+*/
 const mongoose = require('mongoose');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
@@ -104,20 +112,45 @@ UserSchema.statics.findByToken = function (token) {
 
 };
 
+UserSchema.statics.findByCredentials = function (email, password) {
+    var User = this;
+
+    //Chaining to the promise
+    return User.findOne({ email }).then((user) => {
+        if (!user) {
+            return Promise.reject();
+        }
+
+        return new Promise((resolve, reject) => {
+            bcrypt.compare(password, user.password, (err, res) => {
+                if (err) {
+                    reject(err);
+                }
+
+                if (res) {
+                    resolve(user);
+                } else {
+                    reject(res);
+                }
+            });
+        });    
+    });
+};
+
 //run this before save is fired
 UserSchema.pre('save', function (next) {
 
     var user = this;
 
     //look if the property is modified
-    if(user.isModified('password')){
-        bcrypt.genSalt(10, (err, salt) =>{
-            bcrypt.hash(user.password, salt, (err, hash) =>{
+    if (user.isModified('password')) {
+        bcrypt.genSalt(10, (err, salt) => {
+            bcrypt.hash(user.password, salt, (err, hash) => {
                 user.password = hash;
                 next();
             });
         });
-    }else{
+    } else {
         next();
     }
 

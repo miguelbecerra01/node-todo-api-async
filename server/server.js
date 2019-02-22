@@ -3,6 +3,7 @@ require('./config/config');
 const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
+const bcrypt = require('bcryptjs');
 
 var { ObjectID } = require('mongodb');
 var { mongoose } = require('./db/mongoose');
@@ -144,18 +145,41 @@ app.post('/users', (req, res) => {
         //send the token with header
         res.header('x-auth', token).send(user);
     }).catch((e) => {
-      //  console.log(e);
+        //  console.log(e);
         res.status(400).send(e);
     });
 
 });
 
- 
+
 //GET users/me uses authenticate middleware
 app.get('/users/me', authenticate, (req, res) => {
     res.send(req.user);
 });
 
+
+//POST users/login
+app.post('/users/login', (req, res) => {
+    var body = _.pick(req.body, ['email', 'password']);
+
+    if (!body.email) {
+        return res.status(400).send('email cannot be empty');
+    }
+    if (!body.password) {
+        return res.status(400).send('password cannot be empty');
+    }
+
+    User.findByCredentials(body.email, body.password).then((user) => {
+        //if there is an error catch will catch it.
+        return user.generateAuthToken().then((token) => {
+            //send the token with header
+            res.header('x-auth', token).send(user);
+        });
+    }).catch((e) => {
+        res.status(400).send(e);
+    });
+
+})
 
 
 app.listen(port, () => {
@@ -164,31 +188,7 @@ app.listen(port, () => {
 module.exports = { app };
 
 
-/*
-var newTodo = new Todo({
-    text: ' sa ',
-    completed: true
-});
 
-newTodo.save().then((doc) => {
-    console.log(JSON.stringify(doc, undefined, 2));
-}, (err) => {
-    console.log('Unable to save todo', err);
-});
-
-
-
-
-var newUser = new User({
-    email: '   email@mail.com'
-});
-
-newUser.save().then((doc) => {
-    console.log(JSON.stringify(doc, undefined, 2));
-}, (err) => {
-    console.log('Unable to save the user', err);
-});
-*/
 
 
 
