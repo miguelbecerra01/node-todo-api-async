@@ -70,7 +70,7 @@ UserSchema.methods.generateAuthToken = function () {
         },
         process.env.JWT_SECRET, 
         {
-            expiresIn: '1m' //expires in 1 minute
+            expiresIn: '10m' //expires in 1 minute
         }).toString();
 
     //user.tokens.concat([{ access, token }]);
