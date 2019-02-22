@@ -1,3 +1,4 @@
+//https://jestjs.io/docs/en/expect.html
 const expect = require('expect');
 const request = require('supertest');
 
@@ -245,7 +246,7 @@ describe('POST /todos', () => {
                         expect(user).toExist;
                         expect(user.password).not.toBe(newUser.password);
                         done();
-                    });
+                    }).catch((e) => done(e));
                 });
 
         });
@@ -260,10 +261,10 @@ describe('POST /todos', () => {
                 .post('/users')
                 .send(newUser)
                 .expect(400)
-                 .expect((res)=>{
+                .expect((res) => {
                     expect(res.body.errors.email).toExist;
                     expect(res.body.errors.password).toExist;
-                 })              
+                })
                 .end(done);
         });
 
@@ -277,10 +278,69 @@ describe('POST /todos', () => {
                 .post('/users')
                 .send(newUser)
                 .expect(400)
-                .expect((res)=>{
+                .expect((res) => {
                     expect(res.body.code).toBe(11000); //E11000 duplicate key error collection
                 })
                 .end(done);
+        });
+
+    });
+
+
+    describe('POST /users/login', () => {
+        it('should login user and return auth token', (done) => {
+            request(app)
+                .post('/users/login')
+                .send({ email: users[1].email, password: users[1].password })
+                .expect(200)
+                .expect((res) => {
+                    expect(res.header['x-auth']).not.toBe('');
+                    expect(res.body.email).toBe(users[1].email);
+                }).end((err, res) => {
+                    if (err) {
+                        return done(err);
+                    }
+
+                    User.findById(users[1]._id).then((user) => {
+
+                        expect(user.tokens[0]).toMatchObject({
+                            access: 'auth',
+                            token: res.headers['x-auth']
+                        });
+
+                        done();
+                    }).catch((e) => done(e));
+                });
+        });
+
+        it('should reject invalid login', (done) => {
+            request(app)
+                .post('/users/login')
+                .send({ email: 'mail@egmail.com', password: '123asd' })
+                .expect(400)
+                .expect((res) => {
+                    expect(res.header['x-auth']).toBe(undefined);
+                })
+                .end(done);
+        });
+
+        it('should reject invalid password', (done) => {
+            request(app)
+                .post('/users/login')
+                .send({ email: users[1].email, password: '123asd' })
+                .expect(400)
+                .expect((res) => {
+                    expect(res.header['x-auth']).toBe(undefined);
+                })
+                .end((err, res) => {
+                    if (err) {
+                        return done(err);
+                    }
+                    User.findById(users[1]._id).then((user) => {
+                        expect(user.tokens.length).toBe(0);
+                        done();
+                    }).catch((e) => done(e));
+                });
         });
 
     });
