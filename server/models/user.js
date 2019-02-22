@@ -73,6 +73,11 @@ UserSchema.methods.generateAuthToken = function () {
 
 
 //function is used because we need access to the this binding
+/*The simplest way is to keep in mind that the .statics methods
+ operate on an entire collection while the .methods methods
+  act on a single document so you'd use const User = this in the first case 
+  and const user = this in the second case. */
+
 UserSchema.statics.findByToken = function (token) {
     //model methods get called with the model as this binding
     var User = this;
