@@ -1,10 +1,16 @@
 //https://mongoosejs.com/docs/validation.html#custom-validators
 //https://www.npmjs.com/package/validator
+//https://mongoosejs.com/docs/middleware.html
+
+
 const mongoose = require('mongoose');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const _ = require('lodash');
+const bcrypt = require('bcryptjs');
 
+
+//use validator for the schema
 var UserSchema = new mongoose.Schema({
     email: {
         type: String,
@@ -37,6 +43,7 @@ var UserSchema = new mongoose.Schema({
     }]
 });
 
+//overrites the output to only show _id and email, the rest is not shown
 UserSchema.methods.toJSON = function () {
     var user = this;
     var userObject = user.toObject(); //takes your regular mongoose object to a regular javascript object
@@ -44,17 +51,19 @@ UserSchema.methods.toJSON = function () {
     return _.pick(userObject, ['_id', 'email']);
 };
 
-
-
 UserSchema.methods.generateAuthToken = function () {
     //instance methods get called with individual document
     var user = this;
     var access = 'auth';
-    var token = jwt.sign({ _id: user._id.toHexString(), access }, 'abc123').toString();
+    var token = jwt.sign(
+        {
+            _id: user._id.toHexString(),
+            access
+        },
+        'abc123').toString();
 
     //user.tokens.concat([{ access, token }]);
-    user.tokens.push({access, token});
-
+    user.tokens.push({ access, token });
 
     //we return to make the promise in server.js
     return user.save().then(() => {
@@ -75,20 +84,39 @@ UserSchema.statics.findByToken = function (token) {
         //retrn a promise so in server.js you can call then to catch the error.
         //return new Promise((resolve, reject)=>{
         //    reject();
-       // });
+        // });
 
-       //this is shorthand for promise
-       return Promise.reject();
+        //this is shorthand for promise
+        return Promise.reject();
     }
 
     //quotes are used when the dot is used to access to a property of the object
     return User.findOne({
-        '_id':decoded._id,
+        '_id': decoded._id,
         'tokens.token': token,
         'tokens.access': 'auth'
     });
-    
+
 };
+
+//run this before save is fired
+UserSchema.pre('save', function (next) {
+
+    var user = this;
+
+    //look if the property is modified
+    if(user.isModified('password')){
+        bcrypt.genSalt(10, (err, salt) =>{
+            bcrypt.hash(user.password, salt, (err, hash) =>{
+                user.password = hash;
+                next();
+            });
+        });
+    }else{
+        next();
+    }
+
+});
 
 
 var User = mongoose.model('User', UserSchema);

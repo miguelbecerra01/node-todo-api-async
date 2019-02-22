@@ -26,3 +26,9 @@ if(resultHash === token.hash){
 }else{
     console.log('Data was changed. do not trust!');
 }
+
+
+
+
+
+

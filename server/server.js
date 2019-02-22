@@ -138,6 +138,7 @@ app.post('/users', (req, res) => {
     });*/
 
     user.save().then(() => {
+        //we update the user with the token in the db
         return user.generateAuthToken();
     }).then((token) => {
         //send the token with header
