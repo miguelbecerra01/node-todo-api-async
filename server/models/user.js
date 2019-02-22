@@ -79,6 +79,22 @@ UserSchema.methods.generateAuthToken = function () {
     });
 };
 
+UserSchema.methods.removeToken = function (token) {
+    var user = this;
+
+    //with return we return to the promise
+    return user.updateOne({
+        //$pull removes any object that has a token equal to the token sent 
+        $pull: {
+            tokens: {
+                token: token
+            }
+        }
+    });
+};
+
+
+
 
 //function is used because we need access to the this binding
 /*The simplest way is to keep in mind that the .statics methods
@@ -133,7 +149,7 @@ UserSchema.statics.findByCredentials = function (email, password) {
                     reject(res);
                 }
             });
-        });    
+        });
     });
 };
 
