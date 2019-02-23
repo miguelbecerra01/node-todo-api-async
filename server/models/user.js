@@ -1,7 +1,7 @@
 //https://mongoosejs.com/docs/validation.html#custom-validators
 //https://www.npmjs.com/package/validator
 //https://mongoosejs.com/docs/middleware.html
-
+//https://github.com/auth0/node-jsonwebtoken
 /*
 
 How can we decide to use whether Instance method or Model method ?
@@ -70,7 +70,7 @@ UserSchema.methods.generateAuthToken = function () {
         },
         process.env.JWT_SECRET, 
         {
-            expiresIn: '10m' //expires in 1 minute
+            expiresIn: '1m' //expires in 1 minute
         }).toString();
 
     //user.tokens.concat([{ access, token }]);
