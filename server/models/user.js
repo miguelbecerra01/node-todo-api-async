@@ -59,44 +59,50 @@ UserSchema.methods.toJSON = function () {
     return _.pick(userObject, ['_id', 'email']);
 };
 
-UserSchema.methods.generateAuthToken = function () {
-    //instance methods get called with individual document
-    var user = this;
-    var access = 'auth';
-    var token = jwt.sign(
-        {
-            _id: user._id.toHexString(),
-            access
-        },
-        process.env.JWT_SECRET, 
-        {
-            expiresIn: '1m' //expires in 1 minute
-        }).toString();
+UserSchema.methods.generateAuthToken = async function () {
+    try {
+        //instance methods get called with individual document
+        const user = this;
+        const access = 'auth';
+        const token = jwt.sign(
+            {
+                _id: user._id.toHexString(),
+                access
+            },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: '1m' //expires in 1 minute
+            }).toString();
 
-    //user.tokens.concat([{ access, token }]);
-    user.tokens.push({ access, token });
+        //user.tokens.concat([{ access, token }]);
+        user.tokens.push({ access, token });
 
-    //we return to make the promise in server.js
-    return user.save().then(() => {
+        //we return to make the promise in server.js
+        await user.save();
         return token;
-    });
+
+    } catch (err) {
+        throw new Error(err);
+    }
 };
 
-UserSchema.methods.removeToken = function (token) {
-    var user = this;
+UserSchema.methods.removeToken = async function (token) {
+    try {
+        const user = this;
 
-    //with return we return to the promise
-    return user.updateOne({
-        //$pull removes any object that has a token equal to the token sent 
-        $pull: {
-            tokens: {
-                token: token
+        //with return we return to the promise
+        return await user.updateOne({
+            //$pull removes any object that has a token equal to the token sent 
+            $pull: {
+                tokens: {
+                    token: token
+                }
             }
-        }
-    });
+        });
+    } catch (err) {
+        throw new Error(e);
+    }
 };
-
-
 
 
 //function is used because we need access to the this binding
@@ -105,55 +111,46 @@ UserSchema.methods.removeToken = function (token) {
   act on a single document so you'd use const User = this in the first case 
   and const user = this in the second case. */
 
-UserSchema.statics.findByToken = function (token) {
+UserSchema.statics.findByToken = async function (token) {
     //model methods get called with the model as this binding
-    var User = this;
+    const User = this;
     var decoded;
 
     try {
         decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (e) {
-        //retrn a promise so in server.js you can call then to catch the error.
-        //return new Promise((resolve, reject)=>{
-        //    reject();
-        // });
-
-        //this is shorthand for promise
-        return Promise.reject();
+        throw new Error();
     }
 
-    //quotes are used when the dot is used to access to a property of the object
-    return User.findOne({
-        '_id': decoded._id,
-        'tokens.token': token,
-        'tokens.access': 'auth'
-    });
-
+    try {
+        //quotes are used when the dot is used to access to a property of the object
+        return await User.findOne({
+            '_id': decoded._id,
+            'tokens.token': token,
+            'tokens.access': 'auth'
+        });
+    } catch (err) {
+        throw new Error(err);
+    }
 };
 
-UserSchema.statics.findByCredentials = function (email, password) {
-    var User = this;
+UserSchema.statics.findByCredentials = async function (email, password) {
+    const User = this;
 
-    //Chaining to the promise
-    return User.findOne({ email }).then((user) => {
+    try {
+        const user = await User.findOne({ email });
         if (!user) {
-            return Promise.reject();
+            throw new Error();
         }
-
-        return new Promise((resolve, reject) => {
-            bcrypt.compare(password, user.password, (err, res) => {
-                if (err) {
-                    reject(err);
-                }
-
-                if (res) {
-                    resolve(user);
-                } else {
-                    reject(res);
-                }
-            });
-        });
-    });
+        //true or false if the password doesnt match
+        if (await bcrypt.compare(password, user.password)) {
+            return user;
+        } else {
+            throw new Error();
+        }
+    } catch (err) {
+        throw new Error(err);
+    }
 };
 
 //run this before save is fired
